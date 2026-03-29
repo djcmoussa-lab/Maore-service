@@ -138,7 +138,7 @@ export default function App() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState("basique");
   const [mapVillage, setMapVillage] = useState("");
-  const [form, setForm] = useState({ nom:"", categorie:"Plomberie", village:"", telephone:"", email:"", description:"", tarif:"" });
+  const [form, setForm] = useState({ nom:"", categorie:"Plomberie", village:"", telephone:"", email:"", description:"", tarif:"", customCategorie:"" });
 
   // Load services from Supabase
   const loadServices = async () => {
@@ -153,18 +153,19 @@ export default function App() {
 
   const submitPaid = async () => {
     if (!form.nom || !form.village || !form.telephone || !form.description) return;
+    const finalCategorie = form.categorie === "Autre" && form.customCategorie ? form.customCategorie : form.categorie;
     // Save to Supabase
     try {
       await supaFetch("services", {
         method: "POST",
-        body: JSON.stringify({ ...form, plan: selectedPlan }),
+        body: JSON.stringify({ nom:form.nom, categorie:finalCategorie, village:form.village, telephone:form.telephone, email:form.email, description:form.description, tarif:form.tarif, plan: selectedPlan }),
       });
-      await loadServices(); // Reload to show new entry
+      await loadServices();
     } catch (e) { console.error("Erreur inscription:", e); }
     // Redirect to Stripe
     const plan = PLANS.find(p => p.id === selectedPlan);
     if (plan?.stripeLink) window.open(plan.stripeLink, "_blank");
-    setForm({ nom:"", categorie:"Plomberie", village:"", telephone:"", email:"", description:"", tarif:"" });
+    setForm({ nom:"", categorie:"Plomberie", village:"", telephone:"", email:"", description:"", tarif:"", customCategorie:"" });
     setShowSuccess(true);
     setTimeout(() => { setShowSuccess(false); setPage("browse"); }, 3000);
   };
@@ -259,7 +260,7 @@ export default function App() {
             </section>
 
             <section className="stats-grid" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom:48 }}>
-              {[{ v:services.length, l:"Prestataires", i:<UserIcon /> }, { v:[...new Set(services.map(s => s.categorie))].length, l:"Catégories", i:<GridIcon /> }, { v:[...new Set(services.map(s => s.village).filter(Boolean))].length, l:"Villages", i:<MapIcon /> }, { v:services.filter(s => s.plan !== "basique").length, l:"Certifiés", i:<ShieldIcon /> }].map((s, i) =>
+              {[{ v:services.length, l:"Prestataires", i:<UserIcon /> }, { v:[...new Set(services.map(s => s.categorie))].length, l:"Catégories", i:<GridIcon /> }, { v:[...new Set(services.map(s => s.village).filter(Boolean))].length, l:"Communes", i:<MapIcon /> }, { v:services.filter(s => s.plan !== "basique").length, l:"Certifiés", i:<ShieldIcon /> }].map((s, i) =>
                 <div key={i} style={{ padding:22, borderRadius:16, background:"#fff", border:"1px solid #EFEFE8", textAlign:"center" }}><div style={{ display:"flex", justifyContent:"center", marginBottom:6, color:"#0D9488" }}>{s.i}</div><div style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:800, color:"#0D9488" }}>{s.v}</div><div style={{ fontSize:12, color:"#8A8A82", marginTop:2, fontWeight:500 }}>{s.l}</div></div>
               )}
             </section>
@@ -268,7 +269,7 @@ export default function App() {
             <section style={{ marginBottom:48, borderRadius:20, overflow:"hidden", border:"1px solid #EFEFE8", height:300, position:"relative", cursor:"pointer" }} onClick={() => setPage("carte")}>
               <MayotteMap services={services} />
               <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"18px 24px", background:"linear-gradient(transparent,rgba(250,250,248,.95))", display:"flex", justifyContent:"space-between", alignItems:"center", zIndex:10 }}>
-                <div><div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:17 }}>Carte de Mayotte</div><div style={{ fontSize:13, color:"#8A8A82" }}>{VILLAGES.length} villages — {services.length} services</div></div>
+                <div><div style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:17 }}>Carte de Mayotte</div><div style={{ fontSize:13, color:"#8A8A82" }}>{VILLAGES.length} communes — {services.length} services</div></div>
                 <button className="btn btn-fill" style={{ padding:"10px 20px", fontSize:13 }} onClick={e => { e.stopPropagation(); setPage("carte"); }}>Explorer</button>
               </div>
             </section>
@@ -308,8 +309,8 @@ export default function App() {
         {!loading && page === "carte" && (
           <section style={{ padding:"32px 0 60px", animation:"fadeUp .5s ease-out" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18, flexWrap:"wrap", gap:12 }}>
-              <div><h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:800 }}>Carte des services</h2><p style={{ color:"#8A8A82", marginTop:4, fontSize:14 }}>{VILLAGES.length} villages — Cliquez sur un village</p></div>
-              {mapVillage && <button className="btn btn-ghost" style={{ padding:"8px 16px", fontSize:13 }} onClick={() => setMapVillage("")}>Voir tous les villages</button>}
+              <div><h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:800 }}>Carte des services</h2><p style={{ color:"#8A8A82", marginTop:4, fontSize:14 }}>{VILLAGES.length} communes — Cliquez sur une commune</p></div>
+              {mapVillage && <button className="btn btn-ghost" style={{ padding:"8px 16px", fontSize:13 }} onClick={() => setMapVillage("")}>Voir toutes les communes</button>}
             </div>
             <div className="map-split" style={{ display:"grid", gridTemplateColumns:mapVillage ? "1fr 1fr" : "1fr", gap:20 }}>
               <div style={{ height:mapVillage ? 500 : 520, borderRadius:20, overflow:"hidden", border:"2px solid #EFEFE8" }}>
@@ -340,7 +341,7 @@ export default function App() {
             </div>
             {!mapVillage && (
               <div style={{ marginTop:24 }}>
-                <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700, marginBottom:14 }}>Villages</h3>
+                <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700, marginBottom:14 }}>Communes</h3>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(155px,1fr))", gap:10 }}>
                   {VILLAGES.map(v => {
                     const c = services.filter(s => s.village && s.village.toLowerCase() === v.nom.toLowerCase()).length;
@@ -446,8 +447,8 @@ export default function App() {
                   <div style={{ height:1, background:"#EFEFE8" }} />
                   <div><label className="lbl">Nom ou raison sociale *</label><input className="inp" placeholder="Ex : Marie L." value={form.nom} onChange={e => setForm({ ...form, nom:e.target.value })} /></div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-                    <div><label className="lbl">Catégorie *</label><select className="inp" value={form.categorie} onChange={e => setForm({ ...form, categorie:e.target.value })}>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                    <div><label className="lbl">Village *</label><select className="inp" value={form.village} onChange={e => setForm({ ...form, village:e.target.value })}><option value="">Choisir un village</option>{VILLAGES.map(v => <option key={v.nom} value={v.nom}>{v.nom}</option>)}</select></div>
+                    <div><label className="lbl">Catégorie *</label><select className="inp" value={form.categorie} onChange={e => setForm({ ...form, categorie:e.target.value })}>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select>{form.categorie === "Autre" && <input className="inp" style={{marginTop:8}} placeholder="Précisez votre catégorie" value={form.customCategorie || ""} onChange={e => setForm({ ...form, customCategorie:e.target.value })} />}</div>
+                    <div><label className="lbl">Commune *</label><select className="inp" value={form.village} onChange={e => setForm({ ...form, village:e.target.value })}><option value="">Choisir une commune</option>{VILLAGES.map(v => <option key={v.nom} value={v.nom}>{v.nom}</option>)}</select></div>
                   </div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
                     <div><label className="lbl">Téléphone *</label><input className="inp" placeholder="0639 XX XX XX" value={form.telephone} onChange={e => setForm({ ...form, telephone:e.target.value })} /></div>
