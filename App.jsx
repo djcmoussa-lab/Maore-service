@@ -1,6 +1,21 @@
 import { useState, useEffect, useRef } from "react";
 
-const STORAGE_KEY = "maoreservice-v3";
+const SUPABASE_URL = "https://xqalzbovdbfvfttufelz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_hcJsadFAPXWGvnG-gemc8g_ZwH6b8wT";
+
+const supaFetch = async (path, options = {}) => {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": options.method === "POST" ? "return=representation" : undefined,
+      ...options.headers,
+    },
+  });
+  return res.json();
+};
 
 const PhoneIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
 const MapIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
@@ -15,7 +30,6 @@ const GridIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="non
 const UserIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 const ShieldIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>;
 const LockIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
-const CreditCardIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>;
 
 const CATEGORIES = [
   "Plomberie","Électricité","Transport","Ménage & Nettoyage","Jardinage",
@@ -46,25 +60,17 @@ const VILLAGES = [
 
 const PLANS = [
   { id:"basique", name:"Basique", price:"5€", period:"/mois", color:"#6B7280", bg:"#F9FAFB", border:"#9CA3AF",
+    stripeLink:"https://buy.stripe.com/cNi14mgz79ipdtQ58t7EQ00",
     features:["Fiche visible dans l'annuaire","Nom + description + téléphone","1 catégorie"],
     missing:["Pas de badge vérifié","Pas de mise en avant","Position standard"] },
   { id:"standard", name:"Standard", price:"9,99€", period:"/mois", color:"#0D9488", bg:"#F0FDFA", border:"#0D9488", popular:true,
+    stripeLink:"https://buy.stripe.com/bJedR896FfGN75sfN77EQ01",
     features:["Fiche complète avec email + tarif","Badge vérifié visible","Priorité dans les résultats","Jusqu'à 3 catégories","Statistiques de vues"],
     missing:["Pas de mise en avant en accueil"] },
   { id:"premium", name:"Premium", price:"15€", period:"/mois", color:"#7C3AED", bg:"#FAF5FF", border:"#7C3AED",
+    stripeLink:"https://buy.stripe.com/28EeVc3Ml529dtQ0Sd7EQ02",
     features:["Tout Standard inclus","Badge Premium vérifié","Affiché en tête de l'annuaire","Encart vedette en page d'accueil","Catégories illimitées","Statistiques avancées + clics","Support prioritaire"],
     missing:[] },
-];
-
-const SAMPLE = [
-  { id:1, nom:"Saïd K.", categorie:"Plomberie", village:"Mamoudzou", telephone:"0639 12 34 56", email:"said.k@email.com", description:"Plombier qualifié, 8 ans d'expérience. Dépannage urgences, installation sanitaire, chauffe-eau.", tarif:"À partir de 30€", date:"2026-03-22", plan:"premium" },
-  { id:2, nom:"Amina R.", categorie:"Beauté & Coiffure", village:"Kaweni", telephone:"0639 78 90 12", email:"amina.r@email.com", description:"Coiffeuse à domicile, tresses, lissage et soins capillaires. Produits bio.", tarif:"15€ - 60€", date:"2026-03-21", plan:"standard" },
-  { id:3, nom:"Youssouf M.", categorie:"Informatique & Tech", village:"Passamainty", telephone:"0639 45 67 89", email:"youssouf.m@email.com", description:"Réparation ordinateurs et téléphones, installation réseau, assistance informatique.", tarif:"25€/h", date:"2026-03-20", plan:"standard" },
-  { id:4, nom:"Mariama D.", categorie:"Cours & Formation", village:"Koungou", telephone:"0639 11 22 33", email:"", description:"Professeure certifiée, cours de soutien maths et français, CP à 3ème.", tarif:"20€/h", date:"2026-03-19", plan:"basique" },
-  { id:5, nom:"Ali B.", categorie:"Transport", village:"Dembeni", telephone:"0639 44 55 66", email:"ali.b@email.com", description:"Chauffeur privé, transport de personnes et petits colis. Ponctuel et fiable.", tarif:"Selon distance", date:"2026-03-18", plan:"basique" },
-  { id:6, nom:"Nadjma F.", categorie:"Restauration", village:"Mamoudzou", telephone:"0639 77 88 99", email:"nadjma.f@email.com", description:"Traiteur cuisine mahoraise et créole. Événements, mariages, commandes.", tarif:"Sur devis", date:"2026-03-17", plan:"premium" },
-  { id:7, nom:"Housseni A.", categorie:"Électricité", village:"Tsoundzou", telephone:"0639 22 33 44", email:"housseni@email.com", description:"Électricien certifié. Installation, dépannage, mise aux normes.", tarif:"35€/h", date:"2026-03-16", plan:"standard" },
-  { id:8, nom:"Fatouma O.", categorie:"Ménage & Nettoyage", village:"Bandrélé", telephone:"0639 55 66 77", email:"", description:"Nettoyage professionnel résidentiel et commercial. Produits écologiques.", tarif:"15€/h", date:"2026-03-15", plan:"basique" },
 ];
 
 // ── LEAFLET MAP ──
@@ -96,7 +102,7 @@ const MayotteMap = ({ services, onVillageClick }) => {
   const draw = (L) => {
     markers.current.forEach(m => m.remove()); markers.current = [];
     VILLAGES.forEach(v => {
-      const ct = services.filter(s => s.village.toLowerCase().trim() === v.nom.toLowerCase().trim()).length;
+      const ct = services.filter(s => s.village && s.village.toLowerCase().trim() === v.nom.toLowerCase().trim()).length;
       const sz = ct > 0 ? Math.min(18 + ct * 6, 44) : 14;
       const col = ct > 3 ? "#7C3AED" : ct > 0 ? "#0D9488" : "#B0AFA8";
       const bdr = ct > 3 ? "#6D28D9" : ct > 0 ? "#0F766E" : "#9CA3AF";
@@ -105,7 +111,7 @@ const MayotteMap = ({ services, onVillageClick }) => {
         html: `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${col};border:3px solid ${bdr};color:#fff;font-size:${ct>0?12:9}px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;font-family:'DM Sans',sans-serif">${ct > 0 ? ct : ""}</div>`,
         iconSize:[sz,sz], iconAnchor:[sz/2,sz/2],
       });
-      const svcs = services.filter(s => s.village.toLowerCase().trim() === v.nom.toLowerCase().trim());
+      const svcs = services.filter(s => s.village && s.village.toLowerCase().trim() === v.nom.toLowerCase().trim());
       const popup = `<div style="font-family:'DM Sans',sans-serif;min-width:180px">
         <div style="font-weight:800;font-size:15px;margin-bottom:4px">${v.nom}</div>
         <div style="font-size:13px;color:#0D9488;font-weight:600;margin-bottom:8px">${ct} service${ct!==1?"s":""}</div>
@@ -124,95 +130,61 @@ const MayotteMap = ({ services, onVillageClick }) => {
 
 // ── MAIN ──
 export default function App() {
-  const [services, setServices] = useState(SAMPLE);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState("home");
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("Toutes");
   const [showSuccess, setShowSuccess] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState("basique");
-  const [showPayment, setShowPayment] = useState(false);
-  const [paymentDone, setPaymentDone] = useState(false);
   const [mapVillage, setMapVillage] = useState("");
   const [form, setForm] = useState({ nom:"", categorie:"Plomberie", village:"", telephone:"", email:"", description:"", tarif:"" });
 
-  useEffect(() => {
+  // Load services from Supabase
+  const loadServices = async () => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setServices(JSON.parse(saved));
-    } catch {}
-  }, []);
-
-  const persist = (list) => {
-    setServices(list);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch {}
+      const data = await supaFetch("services?select=*&order=created_at.desc");
+      if (Array.isArray(data)) setServices(data);
+    } catch (e) { console.error("Erreur chargement:", e); }
+    setLoading(false);
   };
 
-  const submitPaid = () => {
+  useEffect(() => { loadServices(); }, []);
+
+  const submitPaid = async () => {
     if (!form.nom || !form.village || !form.telephone || !form.description) return;
-    setShowPayment(true);
-  };
-
-  const confirmPayment = () => {
-    persist([{ ...form, id: Date.now(), date: new Date().toISOString().split("T")[0], plan: selectedPlan }, ...services]);
+    // Save to Supabase
+    try {
+      await supaFetch("services", {
+        method: "POST",
+        body: JSON.stringify({ ...form, plan: selectedPlan }),
+      });
+      await loadServices(); // Reload to show new entry
+    } catch (e) { console.error("Erreur inscription:", e); }
+    // Redirect to Stripe
+    const plan = PLANS.find(p => p.id === selectedPlan);
+    if (plan?.stripeLink) window.open(plan.stripeLink, "_blank");
     setForm({ nom:"", categorie:"Plomberie", village:"", telephone:"", email:"", description:"", tarif:"" });
-    setPaymentDone(true);
-    setTimeout(() => { setPaymentDone(false); setShowPayment(false); setShowSuccess(true); }, 2000);
-    setTimeout(() => { setShowSuccess(false); setPage("browse"); }, 4000);
+    setShowSuccess(true);
+    setTimeout(() => { setShowSuccess(false); setPage("browse"); }, 3000);
   };
 
   const planOrd = { premium:0, standard:1, basique:2 };
   const filtered = services.filter(s => {
     const mc = filterCat === "Toutes" || s.categorie === filterCat;
     const q = search.toLowerCase();
-    const ms = !search || s.nom.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || s.village.toLowerCase().includes(q);
+    const ms = !search || s.nom.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || (s.village && s.village.toLowerCase().includes(q));
     return mc && ms;
   }).sort((a, b) => (planOrd[a.plan] || 2) - (planOrd[b.plan] || 2));
 
-  const villageSvcs = mapVillage ? services.filter(s => s.village.toLowerCase() === mapVillage.toLowerCase()) : [];
+  const villageSvcs = mapVillage ? services.filter(s => s.village && s.village.toLowerCase() === mapVillage.toLowerCase()) : [];
   const premSvcs = services.filter(s => s.plan === "premium");
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR") : "";
 
   const Badge = ({ plan }) => {
     if (plan === "premium") return <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 10px", borderRadius:16, background:"linear-gradient(135deg,#7C3AED,#9333EA)", color:"#fff", fontSize:11, fontWeight:700 }}><CrownIcon /> PREMIUM</span>;
     if (plan === "standard") return <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 10px", borderRadius:16, background:"linear-gradient(135deg,#0D9488,#14B8A6)", color:"#fff", fontSize:11, fontWeight:700 }}><StarIcon /> STANDARD</span>;
     return null;
-  };
-
-  const PayModal = () => {
-    if (!showPayment) return null;
-    const pl = PLANS.find(p => p.id === selectedPlan);
-    return (
-      <div style={{ position:"fixed", inset:0, zIndex:999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,.5)", backdropFilter:"blur(8px)" }} onClick={() => { if (!paymentDone) setShowPayment(false); }}>
-        <div style={{ background:"#fff", borderRadius:24, padding:36, maxWidth:420, width:"90%", boxShadow:"0 24px 64px rgba(0,0,0,.15)", animation:"scaleIn .4s ease-out" }} onClick={e => e.stopPropagation()}>
-          {paymentDone ? (
-            <div style={{ textAlign:"center" }}>
-              <div style={{ width:52, height:52, borderRadius:"50%", background:"#D1FAE5", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 14px", color:"#10B981" }}><CheckIcon /></div>
-              <div style={{ fontSize:20, fontWeight:700, color:"#10B981" }}>Paiement confirmé</div>
-              <div style={{ color:"#8A8A82", marginTop:8, fontSize:14 }}>Votre fiche {pl.name} est active</div>
-            </div>
-          ) : (
-            <>
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
-                <div style={{ width:42, height:42, borderRadius:12, background:pl.bg, border:`2px solid ${pl.border}`, display:"flex", alignItems:"center", justifyContent:"center", color:pl.color }}><CreditCardIcon /></div>
-                <div><div style={{ fontWeight:700, fontSize:16 }}>Offre {pl.name}</div><div style={{ fontSize:13, color:"#8A8A82" }}>Abonnement mensuel</div></div>
-              </div>
-              <div style={{ background:"#F9FAFB", borderRadius:14, padding:18, marginBottom:20 }}>
-                <div style={{ display:"flex", justifyContent:"space-between", fontSize:14 }}><span style={{ color:"#6B6B6B" }}>Offre {pl.name}</span><span style={{ fontWeight:700 }}>{pl.price}{pl.period}</span></div>
-                <div style={{ display:"flex", justifyContent:"space-between", fontSize:14, paddingTop:8, marginTop:8, borderTop:"1px solid #E8E8E4" }}><span style={{ fontWeight:700 }}>Total</span><span style={{ fontWeight:800, color:pl.color, fontSize:18 }}>{pl.price}{pl.period}</span></div>
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:20 }}>
-                <div><label style={{ display:"block", fontSize:12, fontWeight:600, color:"#6B6B6B", marginBottom:6 }}>Numéro de carte</label><input className="inp" placeholder="1234 5678 9012 3456" /></div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                  <div><label style={{ display:"block", fontSize:12, fontWeight:600, color:"#6B6B6B", marginBottom:6 }}>Expiration</label><input className="inp" placeholder="MM / AA" /></div>
-                  <div><label style={{ display:"block", fontSize:12, fontWeight:600, color:"#6B6B6B", marginBottom:6 }}>CVC</label><input className="inp" placeholder="123" /></div>
-                </div>
-              </div>
-              <button className="btn" style={{ width:"100%", justifyContent:"center", padding:15, fontSize:15, background:pl.color, color:"#fff", boxShadow:`0 4px 16px ${pl.color}33` }} onClick={confirmPayment}><LockIcon /> Payer {pl.price}{pl.period}</button>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:12, fontSize:12, color:"#B0AFA8" }}><ShieldIcon /> Paiement sécurisé</div>
-            </>
-          )}
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -223,6 +195,7 @@ export default function App() {
         body{background:#FAFAF8}
         @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
         @keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+        @keyframes spin{to{transform:rotate(360deg)}}
         .nav-i{cursor:pointer;padding:8px 16px;border-radius:10px;font-weight:600;font-size:13px;color:#6B6B6B;transition:all .25s}
         .nav-i:hover{color:#1A1A1A;background:rgba(0,0,0,.04)}.nav-i.on{color:#0D9488;background:rgba(13,148,136,.06)}
         .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;transition:all .3s;border:none;font-family:'DM Sans',sans-serif}
@@ -244,17 +217,10 @@ export default function App() {
         .sbar input{border:none;outline:none;font-size:15px;font-family:'DM Sans',sans-serif;color:#1A1A1A;flex:1;background:transparent}.sbar input::placeholder{color:#B0AFA8}
         .lbl{display:block;font-size:13px;font-weight:600;color:#6B6B6B;margin-bottom:8px}
         .leaflet-popup-content-wrapper{border-radius:14px!important;box-shadow:0 8px 24px rgba(0,0,0,.12)!important}
+        .spinner{width:32px;height:32px;border:3px solid #E8E8E4;border-top-color:#0D9488;border-radius:50%;animation:spin .8s linear infinite}
         ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#D4D4CC;border-radius:3px}
-        @media(max-width:768px){
-          .stats-grid{grid-template-columns:repeat(2,1fr)!important}
-          .plans-grid{grid-template-columns:1fr!important}
-          .map-split{grid-template-columns:1fr!important}
-          .nav-links{display:none!important}
-          .nav-mobile{display:flex!important}
-        }
+        @media(max-width:768px){.stats-grid{grid-template-columns:repeat(2,1fr)!important}.plans-grid{grid-template-columns:1fr!important}.map-split{grid-template-columns:1fr!important}}
       `}</style>
-
-      <PayModal />
 
       {/* NAV */}
       <nav style={{ position:"sticky", top:0, zIndex:100, padding:"14px 24px", background:"rgba(250,250,248,.88)", backdropFilter:"blur(16px)", borderBottom:"1px solid #EFEFE8", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -262,7 +228,7 @@ export default function App() {
           <div style={{ width:38, height:38, borderRadius:10, background:"linear-gradient(135deg,#0D9488,#14B8A6)", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontWeight:800, fontSize:17, fontFamily:"'Playfair Display',serif" }}>M</div>
           <div><div style={{ fontWeight:800, fontSize:17, letterSpacing:"-.5px" }}>Maore<span style={{ color:"#0D9488" }}> Service</span></div><div style={{ fontSize:10, color:"#B0AFA8", letterSpacing:1.5, textTransform:"uppercase" }}>Annuaire local — Mayotte</div></div>
         </div>
-        <div className="nav-links" style={{ display:"flex", gap:2, flexWrap:"wrap" }}>
+        <div style={{ display:"flex", gap:2, flexWrap:"wrap" }}>
           {[{ id:"home", l:"Accueil" }, { id:"carte", l:"Carte" }, { id:"browse", l:"Annuaire" }, { id:"tarifs", l:"Tarifs" }, { id:"register", l:"S'inscrire" }].map(n =>
             <div key={n.id} className={`nav-i ${page === n.id ? "on" : ""}`} onClick={() => setPage(n.id)}>{n.l}</div>
           )}
@@ -271,8 +237,16 @@ export default function App() {
 
       <div style={{ maxWidth:1100, margin:"0 auto", padding:"0 24px" }}>
 
+        {/* LOADING */}
+        {loading && (
+          <div style={{ display:"flex", justifyContent:"center", alignItems:"center", padding:"100px 0", flexDirection:"column", gap:16 }}>
+            <div className="spinner" />
+            <div style={{ color:"#8A8A82", fontSize:14 }}>Chargement des services...</div>
+          </div>
+        )}
+
         {/* HOME */}
-        {page === "home" && (
+        {!loading && page === "home" && (
           <div style={{ animation:"fadeUp .7s ease-out" }}>
             <section style={{ padding:"70px 0 50px", textAlign:"center" }}>
               <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 18px", borderRadius:24, background:"#F0FDFA", fontSize:13, fontWeight:600, color:"#0D9488", marginBottom:28 }}><MapIcon /> L'annuaire de services n°1 à Mayotte</div>
@@ -285,7 +259,7 @@ export default function App() {
             </section>
 
             <section className="stats-grid" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom:48 }}>
-              {[{ v:services.length, l:"Prestataires", i:<UserIcon /> }, { v:[...new Set(services.map(s => s.categorie))].length, l:"Catégories", i:<GridIcon /> }, { v:[...new Set(services.map(s => s.village))].length, l:"Villages", i:<MapIcon /> }, { v:services.filter(s => s.plan !== "basique").length, l:"Certifiés", i:<ShieldIcon /> }].map((s, i) =>
+              {[{ v:services.length, l:"Prestataires", i:<UserIcon /> }, { v:[...new Set(services.map(s => s.categorie))].length, l:"Catégories", i:<GridIcon /> }, { v:[...new Set(services.map(s => s.village).filter(Boolean))].length, l:"Villages", i:<MapIcon /> }, { v:services.filter(s => s.plan !== "basique").length, l:"Certifiés", i:<ShieldIcon /> }].map((s, i) =>
                 <div key={i} style={{ padding:22, borderRadius:16, background:"#fff", border:"1px solid #EFEFE8", textAlign:"center" }}><div style={{ display:"flex", justifyContent:"center", marginBottom:6, color:"#0D9488" }}>{s.i}</div><div style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:800, color:"#0D9488" }}>{s.v}</div><div style={{ fontSize:12, color:"#8A8A82", marginTop:2, fontWeight:500 }}>{s.l}</div></div>
               )}
             </section>
@@ -314,6 +288,14 @@ export default function App() {
               </section>
             )}
 
+            {services.length === 0 && (
+              <section style={{ textAlign:"center", padding:48, borderRadius:20, background:"#fff", border:"1px solid #EFEFE8", marginBottom:48 }}>
+                <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, marginBottom:8 }}>Soyez le premier inscrit</div>
+                <p style={{ color:"#8A8A82", marginBottom:20 }}>Aucun prestataire n'est encore référencé. Lancez-vous et profitez de la visibilité maximale.</p>
+                <button className="btn btn-fill" onClick={() => setPage("register")}><PlusIcon /> M'inscrire maintenant</button>
+              </section>
+            )}
+
             <section style={{ textAlign:"center", padding:44, borderRadius:24, marginBottom:50, background:"linear-gradient(135deg,#F0FDFA,#CCFBF1)", border:"1px solid rgba(13,148,136,.12)" }}>
               <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, marginBottom:8 }}>Boostez votre visibilité</h3>
               <p style={{ color:"#8A8A82", marginBottom:20, maxWidth:400, margin:"0 auto 20px" }}>Apparaissez en priorité et attirez plus de clients</p>
@@ -323,7 +305,7 @@ export default function App() {
         )}
 
         {/* CARTE */}
-        {page === "carte" && (
+        {!loading && page === "carte" && (
           <section style={{ padding:"32px 0 60px", animation:"fadeUp .5s ease-out" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18, flexWrap:"wrap", gap:12 }}>
               <div><h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:800 }}>Carte des services</h2><p style={{ color:"#8A8A82", marginTop:4, fontSize:14 }}>{VILLAGES.length} villages — Cliquez sur un village</p></div>
@@ -361,7 +343,7 @@ export default function App() {
                 <h3 style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:700, marginBottom:14 }}>Villages</h3>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(155px,1fr))", gap:10 }}>
                   {VILLAGES.map(v => {
-                    const c = services.filter(s => s.village.toLowerCase() === v.nom.toLowerCase()).length;
+                    const c = services.filter(s => s.village && s.village.toLowerCase() === v.nom.toLowerCase()).length;
                     return <div key={v.nom} style={{ padding:12, borderRadius:12, background:"#fff", border:"1px solid #EFEFE8", cursor:"pointer", transition:"all .25s", display:"flex", justifyContent:"space-between", alignItems:"center" }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = "#0D9488"; e.currentTarget.style.transform = "translateY(-2px)"; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = "#EFEFE8"; e.currentTarget.style.transform = "translateY(0)"; }}
@@ -377,7 +359,7 @@ export default function App() {
         )}
 
         {/* BROWSE */}
-        {page === "browse" && (
+        {!loading && page === "browse" && (
           <section style={{ padding:"36px 0 60px", animation:"fadeUp .5s ease-out" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:16, marginBottom:24 }}>
               <div><h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:800 }}>Annuaire</h2><p style={{ color:"#8A8A82", marginTop:4, fontSize:14 }}>{filtered.length} résultat{filtered.length !== 1 ? "s" : ""}</p></div>
@@ -387,29 +369,36 @@ export default function App() {
               <button className={`fpill ${filterCat === "Toutes" ? "on" : ""}`} onClick={() => setFilterCat("Toutes")}>Toutes</button>
               {CATEGORIES.map(c => <button key={c} className={`fpill ${filterCat === c ? "on" : ""}`} onClick={() => setFilterCat(c)}>{c}</button>)}
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(310px,1fr))", gap:16 }}>
-              {filtered.map((s, i) => (
-                <div key={s.id} className={`scard ${s.plan === "premium" ? "pro" : s.plan === "standard" ? "std" : ""}`} style={{ animationDelay:`${i * .06}s` }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-                    <div><div style={{ display:"flex", alignItems:"center", gap:8 }}><span style={{ fontWeight:700, fontSize:15 }}>{s.nom}</span><Badge plan={s.plan} /></div><div style={{ fontSize:12, color:"#B0AFA8" }}>{s.date}</div></div>
+            {filtered.length === 0 ? (
+              <div style={{ textAlign:"center", padding:50, background:"#fff", borderRadius:18, border:"1px solid #EFEFE8" }}>
+                <div style={{ fontWeight:700, fontSize:18, marginBottom:6 }}>{services.length === 0 ? "Aucun prestataire inscrit" : "Aucun résultat"}</div>
+                <div style={{ color:"#8A8A82", fontSize:14, marginBottom:16 }}>{services.length === 0 ? "Soyez le premier à vous inscrire" : "Modifiez vos filtres"}</div>
+                {services.length === 0 && <button className="btn btn-fill" style={{ fontSize:13 }} onClick={() => setPage("register")}><PlusIcon /> S'inscrire</button>}
+              </div>
+            ) : (
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(310px,1fr))", gap:16 }}>
+                {filtered.map((s, i) => (
+                  <div key={s.id} className={`scard ${s.plan === "premium" ? "pro" : s.plan === "standard" ? "std" : ""}`} style={{ animationDelay:`${i * .06}s` }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+                      <div><div style={{ display:"flex", alignItems:"center", gap:8 }}><span style={{ fontWeight:700, fontSize:15 }}>{s.nom}</span><Badge plan={s.plan} /></div><div style={{ fontSize:12, color:"#B0AFA8" }}>{formatDate(s.created_at)}</div></div>
+                    </div>
+                    <div className="chip" style={{ marginBottom:10 }}>{s.categorie}</div>
+                    <p style={{ color:"#6B6B6B", fontSize:14, lineHeight:1.6, marginBottom:12 }}>{s.description}</p>
+                    {s.tarif && <div style={{ display:"inline-block", padding:"3px 10px", borderRadius:8, background:"#F0FDF4", color:"#16A34A", fontSize:13, fontWeight:700, marginBottom:12 }}>{s.tarif}</div>}
+                    <div style={{ display:"flex", gap:14, flexWrap:"wrap", paddingTop:12, borderTop:"1px solid #F0F0EA", fontSize:13, color:"#8A8A82" }}>
+                      <span style={{ display:"flex", alignItems:"center", gap:5 }}><MapIcon />{s.village}</span>
+                      <span style={{ display:"flex", alignItems:"center", gap:5 }}><PhoneIcon />{s.telephone}</span>
+                      {s.plan !== "basique" && s.email && <span style={{ display:"flex", alignItems:"center", gap:5 }}><MailIcon />{s.email}</span>}
+                    </div>
                   </div>
-                  <div className="chip" style={{ marginBottom:10 }}>{s.categorie}</div>
-                  <p style={{ color:"#6B6B6B", fontSize:14, lineHeight:1.6, marginBottom:12 }}>{s.description}</p>
-                  {s.tarif && <div style={{ display:"inline-block", padding:"3px 10px", borderRadius:8, background:"#F0FDF4", color:"#16A34A", fontSize:13, fontWeight:700, marginBottom:12 }}>{s.tarif}</div>}
-                  <div style={{ display:"flex", gap:14, flexWrap:"wrap", paddingTop:12, borderTop:"1px solid #F0F0EA", fontSize:13, color:"#8A8A82" }}>
-                    <span style={{ display:"flex", alignItems:"center", gap:5 }}><MapIcon />{s.village}</span>
-                    <span style={{ display:"flex", alignItems:"center", gap:5 }}><PhoneIcon />{s.telephone}</span>
-                    {s.plan !== "basique" && s.email && <span style={{ display:"flex", alignItems:"center", gap:5 }}><MailIcon />{s.email}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {filtered.length === 0 && <div style={{ textAlign:"center", padding:50, background:"#fff", borderRadius:18, border:"1px solid #EFEFE8" }}><div style={{ fontWeight:700, fontSize:18, marginBottom:6 }}>Aucun résultat</div><div style={{ color:"#8A8A82", fontSize:14 }}>Modifiez vos filtres</div></div>}
+                ))}
+              </div>
+            )}
           </section>
         )}
 
         {/* TARIFS */}
-        {page === "tarifs" && (
+        {!loading && page === "tarifs" && (
           <section style={{ padding:"44px 0 60px", animation:"fadeUp .6s ease-out" }}>
             <div style={{ textAlign:"center", marginBottom:40 }}><h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:32, fontWeight:800 }}>Nos <span style={{ color:"#0D9488" }}>offres</span></h2><p style={{ color:"#8A8A82", marginTop:8, fontSize:15 }}>Choisissez la formule adaptée à votre activité</p></div>
             <div className="plans-grid" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:20, maxWidth:880, margin:"0 auto" }}>
@@ -431,7 +420,7 @@ export default function App() {
         )}
 
         {/* REGISTER */}
-        {page === "register" && (
+        {!loading && page === "register" && (
           <section style={{ padding:"44px 0 60px", maxWidth:600, margin:"0 auto", animation:"scaleIn .5s ease-out" }}>
             <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:800, textAlign:"center", marginBottom:6 }}>Inscrire mon <span style={{ color:"#0D9488" }}>service</span></h2>
             <p style={{ textAlign:"center", color:"#8A8A82", marginBottom:28, fontSize:15 }}>Remplissez vos informations et choisissez votre formule</p>
@@ -439,7 +428,7 @@ export default function App() {
               <div style={{ textAlign:"center", padding:50, background:"#fff", borderRadius:20, border:"2px solid #D1FAE5", animation:"scaleIn .4s ease-out" }}>
                 <div style={{ width:48, height:48, borderRadius:"50%", background:"#D1FAE5", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 14px", color:"#10B981" }}><CheckIcon /></div>
                 <div style={{ fontSize:20, fontWeight:700, color:"#10B981" }}>Service enregistré</div>
-                <div style={{ color:"#8A8A82", marginTop:8 }}>Votre fiche est maintenant visible</div>
+                <div style={{ color:"#8A8A82", marginTop:8 }}>Votre fiche est visible par tous les visiteurs</div>
               </div>
             ) : (
               <div style={{ background:"#fff", borderRadius:20, border:"1px solid #EFEFE8", padding:32, boxShadow:"0 4px 24px rgba(0,0,0,.03)" }}>
@@ -458,7 +447,7 @@ export default function App() {
                   <div><label className="lbl">Nom ou raison sociale *</label><input className="inp" placeholder="Ex : Marie L." value={form.nom} onChange={e => setForm({ ...form, nom:e.target.value })} /></div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
                     <div><label className="lbl">Catégorie *</label><select className="inp" value={form.categorie} onChange={e => setForm({ ...form, categorie:e.target.value })}>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                    <div><label className="lbl">Village *</label><input className="inp" placeholder="Ex : Mamoudzou" value={form.village} onChange={e => setForm({ ...form, village:e.target.value })} /></div>
+                    <div><label className="lbl">Village *</label><select className="inp" value={form.village} onChange={e => setForm({ ...form, village:e.target.value })}><option value="">Choisir un village</option>{VILLAGES.map(v => <option key={v.nom} value={v.nom}>{v.nom}</option>)}</select></div>
                   </div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
                     <div><label className="lbl">Téléphone *</label><input className="inp" placeholder="0639 XX XX XX" value={form.telephone} onChange={e => setForm({ ...form, telephone:e.target.value })} /></div>
@@ -469,7 +458,7 @@ export default function App() {
                   <button className="btn" style={{ width:"100%", justifyContent:"center", padding:16, fontSize:15, marginTop:4, background:selectedPlan === "premium" ? "#7C3AED" : "#0D9488", color:"#fff", boxShadow:selectedPlan === "premium" ? "0 4px 16px rgba(124,58,237,.25)" : "0 4px 16px rgba(13,148,136,.25)" }} onClick={submitPaid}>
                     <LockIcon /> Publier et payer — {PLANS.find(p => p.id === selectedPlan)?.price}{PLANS.find(p => p.id === selectedPlan)?.period}
                   </button>
-                  <p style={{ textAlign:"center", fontSize:12, color:"#B0AFA8" }}>Paiement sécurisé. Fiche activée immédiatement.</p>
+                  <p style={{ textAlign:"center", fontSize:12, color:"#B0AFA8" }}>Vous serez redirigé vers la page de paiement sécurisé Stripe.</p>
                 </div>
               </div>
             )}
@@ -486,3 +475,4 @@ export default function App() {
     </div>
   );
 }
+
