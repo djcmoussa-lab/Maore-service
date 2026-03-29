@@ -160,14 +160,14 @@ export default function App() {
         method: "POST",
         body: JSON.stringify({ nom:form.nom, categorie:finalCategorie, village:form.village, telephone:form.telephone, email:form.email, description:form.description, tarif:form.tarif, plan: selectedPlan }),
       });
-      await loadServices();
     } catch (e) { console.error("Erreur inscription:", e); }
-    // Redirect to Stripe
+    // Redirect to Stripe payment page
     const plan = PLANS.find(p => p.id === selectedPlan);
-    if (plan?.stripeLink) window.open(plan.stripeLink, "_blank");
-    setForm({ nom:"", categorie:"Plomberie", village:"", telephone:"", email:"", description:"", tarif:"", customCategorie:"" });
-    setShowSuccess(true);
-    setTimeout(() => { setShowSuccess(false); setPage("browse"); }, 3000);
+    if (plan?.stripeLink) {
+      setForm({ nom:"", categorie:"Plomberie", village:"", telephone:"", email:"", description:"", tarif:"", customCategorie:"" });
+      window.location.href = plan.stripeLink;
+      return;
+    }
   };
 
   const planOrd = { premium:0, standard:1, basique:2 };
@@ -476,4 +476,5 @@ export default function App() {
     </div>
   );
 }
+
 
